@@ -245,12 +245,12 @@ class ETLDataLoader:
             when warehouseErrors is not an empty list
         """
         default_kwargs = {
-            "companyName": "The Fake Company",
-            "email": "fake@example.com",
-            "name": "fake warehouse",
+            "slug": "a-warehouse",
+            "email": "a@example.com",
+            "name": "A warehouse",
             "address": {
-                "streetAddress1": "a fake street adress",
-                "city": "Fake City",
+                "streetAddress1": "a street adress",
+                "city": "A City",
                 "postalCode": "1024",
                 "country": "CH"
             }
@@ -268,7 +268,7 @@ class ETLDataLoader:
                     warehouse {
                         id
                     }
-                    warehouseErrors {
+                    errors {
                         field
                         message
                         code
@@ -280,10 +280,66 @@ class ETLDataLoader:
         response = graphql_request(
             query, variables, self.headers, self.endpoint_url)
 
-        errors = response["data"]["createWarehouse"]["warehouseErrors"]
+        errors = response["data"]["createWarehouse"]["errors"]
         handle_errors(errors)
 
         return response["data"]["createWarehouse"]["warehouse"]["id"]
+
+    def list_warehouses(self):
+        """List warehouses.
+
+        Returns
+        -------
+        warehouses : dict
+            The result (raw)
+
+        Raises
+        ------
+        Exception
+            when errors is not an empty list
+        """
+        variables = {
+            "filter": {
+                "search": ""
+            }, 
+            "first": 0, 
+            "last": 100
+        }
+
+        query = """
+            query getWarehouses($filter: WarehouseFilterInput, $sortBy: WarehouseSortingInput, $before: String, $after: String, $first: Int, $last: Int) {
+                warehouses(filter: $filter, sortBy: $sortBy, before: $before, after: $after, first: $first, last: $last) {
+                    pageInfo {
+                        hasNextPage,
+                        hasPreviousPage,
+                        startCursor,
+                        endCursor
+                    },
+                    edges {
+                    node {
+                        id,
+                        name,
+                        slug,
+                        email,
+                        address {
+                        id
+                        }
+                    },
+                    cursor
+                    },
+                    totalCount
+                }
+            }
+        """
+
+        response = graphql_request(
+            query, variables, self.headers, self.endpoint_url)
+
+        if "errors" in response["data"].keys():
+            errors = response["data"]["errors"]
+            handle_errors(errors)
+
+        return response["data"]["warehouses"]
 
     def create_shipping_zone(self, **kwargs):
         """create a shippingZone.
@@ -306,11 +362,12 @@ class ETLDataLoader:
             when shippingErrors is not an empty list.
         """
         default_kwargs = {
-            "name": "CH",
-            "countries": [
-                "CH"
-            ],
+            "name": "Example shipping zone",
+            "description": "This is an example shipping zone",
+            "countries": ["AU"],
             "default": False,
+            # "addWarehouses": ["V2FyZWhvdXNlOjVlYTEwZTliLWFjMTEtNDMxYS04M2IxLWE5ZmMyM2NjZmNhZQ=="],
+            # "addChannels": []
         }
 
         override_dict(default_kwargs, kwargs)
@@ -325,7 +382,7 @@ class ETLDataLoader:
                     shippingZone {
                         id
                     }
-                    shippingErrors {
+                    errors {
                         field
                         message
                         code
@@ -337,7 +394,8 @@ class ETLDataLoader:
         response = graphql_request(
             query, variables, self.headers, self.endpoint_url)
 
-        errors = response["data"]["shippingZoneCreate"]["shippingErrors"]
+        errors = response["data"]["shippingZoneCreate"]["errors"]
+        print(response)
         handle_errors(errors)
 
         return response["data"]["shippingZoneCreate"]["shippingZone"]["id"]
@@ -364,7 +422,8 @@ class ETLDataLoader:
         """
         default_kwargs = {
             "inputType": "DROPDOWN",
-            "name": "default"
+            "name": "default",
+            "type": "PRODUCT_TYPE"
         }
 
         override_dict(default_kwargs, kwargs)
@@ -379,7 +438,7 @@ class ETLDataLoader:
                     attribute {
                         id
                     }
-                    productErrors {
+                    errors {
                         field
                         message
                         code
@@ -391,8 +450,9 @@ class ETLDataLoader:
         response = graphql_request(
             query, variables, self.headers, self.endpoint_url)
 
-        errors = response["data"]["attributeCreate"]["productErrors"]
+        errors = response["data"]["attributeCreate"]["errors"]
         handle_errors(errors)
+        print(response)
 
         return response["data"]["attributeCreate"]["attribute"]["id"]
 
@@ -435,7 +495,10 @@ class ETLDataLoader:
                     attribute{
                         id
                     }
-                    productErrors {
+                    attributeValue{
+                        id
+                    }
+                    errors {
                         field
                         message
                         code
@@ -447,8 +510,9 @@ class ETLDataLoader:
         response = graphql_request(
             query, variables, self.headers, self.endpoint_url)
 
-        errors = response["data"]["attributeValueCreate"]["productErrors"]
+        errors = response["data"]["attributeValueCreate"]["errors"]
         handle_errors(errors)
+        print(response)
 
         return response["data"]["attributeValueCreate"]["attribute"]["id"]
 
@@ -492,7 +556,7 @@ class ETLDataLoader:
                     productType {
                         id
                     }
-                    productErrors {
+                    errors {
                         field
                         message
                         code
@@ -504,8 +568,9 @@ class ETLDataLoader:
         response = graphql_request(
             query, variables, self.headers, self.endpoint_url)
 
-        errors = response["data"]["productTypeCreate"]["productErrors"]
+        errors = response["data"]["productTypeCreate"]["errors"]
         handle_errors(errors)
+        print(response)
 
         return response["data"]["productTypeCreate"]["productType"]["id"]
 
@@ -545,7 +610,7 @@ class ETLDataLoader:
                     category {
                         id
                     }
-                    productErrors {
+                    errors {
                         field
                         message
                         code
@@ -557,8 +622,9 @@ class ETLDataLoader:
         response = graphql_request(
             query, variables, self.headers, self.endpoint_url)
 
-        errors = response["data"]["categoryCreate"]["productErrors"]
+        errors = response["data"]["categoryCreate"]["errors"]
         handle_errors(errors)
+        print(response)
 
         return response["data"]["categoryCreate"]["category"]["id"]
 
@@ -588,8 +654,8 @@ class ETLDataLoader:
             "name": "default",
             "description": "default",
             "productType": product_type_id,
-            "basePrice": 0.0,
-            "sku": "default"
+            # "basePrice": 0.0,
+            # "sku": "default"
         }
 
         override_dict(default_kwargs, kwargs)
@@ -604,7 +670,7 @@ class ETLDataLoader:
                     product {
                         id
                     }
-                    productErrors {
+                    errors {
                         field
                         message
                         code
@@ -612,12 +678,14 @@ class ETLDataLoader:
                 }
             }
         """
+        print(variables)
 
         response = graphql_request(
             query, variables, self.headers, self.endpoint_url)
 
-        errors = response["data"]["productCreate"]["productErrors"]
+        errors = response["data"]["productCreate"]["errors"]
         handle_errors(errors)
+        print(response)
 
         return response["data"]["productCreate"]["product"]["id"]
 
@@ -661,7 +729,7 @@ class ETLDataLoader:
                     productVariant {
                         id
                     }
-                    productErrors {
+                    errors {
                         field
                         message
                         code
@@ -673,8 +741,9 @@ class ETLDataLoader:
         response = graphql_request(
             query, variables, self.headers, self.endpoint_url)
 
-        errors = response["data"]["productVariantCreate"]["productErrors"]
+        errors = response["data"]["productVariantCreate"]["errors"]
         handle_errors(errors)
+        print(response)
 
         return response["data"]["productVariantCreate"]["productVariant"]["id"]
 
