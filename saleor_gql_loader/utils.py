@@ -138,9 +138,20 @@ def handle_errors(errors):
         when the list is not empty and display {field} : {message} errors.
     """
     if len(errors) > 0:
+        # Check whether to throw exception
+        avoid_raising_exception = False
+        for error in errors:
+            if "already exists" in error["message"]:
+                avoid_raising_exception = True
+
         txt_list = [
             "{field} : {message}".format(**error) for error in errors]
-        raise Exception("\n".join(txt_list))
+        if avoid_raising_exception == False:
+            raise Exception("\n".join(txt_list))
+        else:
+            print("\n".join(txt_list))
+            return False
+    return True
 
 def get_operations(product_id):
     """Get ProductImageCreate operations

@@ -44,6 +44,11 @@ Or cloning the repo:
 git clone https://github.com/grll/saleor-gql-loader.git
 ```
 
+Install dependencies
+```bash
+pip3 install -r requirements.txt
+```
+
 ## usage
 
 ### prerequisities

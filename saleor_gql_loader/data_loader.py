@@ -341,6 +341,60 @@ class ETLDataLoader:
 
         return response["data"]["warehouses"]
 
+    def get_products(self, product_name):
+        """List products.
+
+        Returns
+        -------
+        products : dict
+            The result (raw)
+
+        Raises
+        ------
+        Exception
+            when errors is not an empty list
+        """
+        variables = {
+            "filter": {
+                "search": product_name
+            }, 
+            "first": 0, 
+            "last": 100
+        }
+
+        print (variables)
+
+        query = """
+            query getProducts($filter: ProductFilterInput, $sortBy: ProductOrder, $before: String, $after: String, $first: Int, $last: Int) {
+                products(filter: $filter, sortBy: $sortBy, before: $before, after: $after, first: $first, last: $last) {
+                    pageInfo {
+                        hasNextPage,
+                        hasPreviousPage,
+                        startCursor,
+                        endCursor
+                    },
+                    edges {
+                    node {
+                        id,
+                        name,
+                        slug
+                    },
+                    cursor
+                    },
+                    totalCount
+                }
+            }
+        """
+
+        response = graphql_request(
+            query, variables, self.headers, self.endpoint_url)
+
+        if "errors" in response["data"].keys():
+            errors = response["data"]["errors"]
+            handle_errors(errors)
+
+        return response["data"]["products"]
+
     def create_shipping_zone(self, **kwargs):
         """create a shippingZone.
 
@@ -420,6 +474,19 @@ class ETLDataLoader:
         Exception
             when productErrors is not an empty list.
         """
+
+        # enum AttributeInputTypeEnum {
+        #     DROPDOWN
+        #     MULTISELECT
+        #     FILE
+        #     REFERENCE
+        #     NUMERIC
+        #     RICH_TEXT
+        #     SWATCH
+        #     BOOLEAN
+        #     DATE
+        #     DATE_TIME
+        # }
         default_kwargs = {
             "inputType": "DROPDOWN",
             "name": "default",
@@ -451,10 +518,9 @@ class ETLDataLoader:
             query, variables, self.headers, self.endpoint_url)
 
         errors = response["data"]["attributeCreate"]["errors"]
-        handle_errors(errors)
+        result_is_good = handle_errors(errors)
         print(response)
-
-        return response["data"]["attributeCreate"]["attribute"]["id"]
+        return response["data"]["attributeCreate"]["attribute"]["id"] if result_is_good else ""
 
     def create_attribute_value(self, attribute_id, **kwargs):
         """create a product attribute value.
@@ -569,10 +635,9 @@ class ETLDataLoader:
             query, variables, self.headers, self.endpoint_url)
 
         errors = response["data"]["productTypeCreate"]["errors"]
-        handle_errors(errors)
+        result_is_good = handle_errors(errors)
         print(response)
-
-        return response["data"]["productTypeCreate"]["productType"]["id"]
+        return response["data"]["productTypeCreate"]["productType"]["id"] if result_is_good else ""
 
     def create_category(self, **kwargs):
         """create a category.
@@ -623,10 +688,9 @@ class ETLDataLoader:
             query, variables, self.headers, self.endpoint_url)
 
         errors = response["data"]["categoryCreate"]["errors"]
-        handle_errors(errors)
+        result_is_good = handle_errors(errors)
         print(response)
-
-        return response["data"]["categoryCreate"]["category"]["id"]
+        return response["data"]["categoryCreate"]["category"]["id"] if result_is_good else ""
 
     def create_product(self, product_type_id, **kwargs):
         """create a product.
@@ -684,10 +748,9 @@ class ETLDataLoader:
             query, variables, self.headers, self.endpoint_url)
 
         errors = response["data"]["productCreate"]["errors"]
-        handle_errors(errors)
+        result_is_good = handle_errors(errors)
         print(response)
-
-        return response["data"]["productCreate"]["product"]["id"]
+        return response["data"]["productCreate"]["product"]["id"] if result_is_good else ""
 
     def create_product_variant(self, product_id, **kwargs):
         """create a product variant.
@@ -741,11 +804,10 @@ class ETLDataLoader:
         response = graphql_request(
             query, variables, self.headers, self.endpoint_url)
 
-        errors = response["data"]["productVariantCreate"]["errors"]
-        handle_errors(errors)
         print(response)
-
-        return response["data"]["productVariantCreate"]["productVariant"]["id"]
+        errors = response["data"]["productVariantCreate"]["errors"]
+        result_is_good = handle_errors(errors)
+        return response["data"]["productVariantCreate"]["productVariant"]["id"] if result_is_good else ""
 
     def create_product_image(self, product_id, file_path):
         """create a product image.
